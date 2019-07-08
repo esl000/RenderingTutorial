@@ -42,9 +42,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
-	Vector3 a(1.f, 1.f, 1.f);
-	Vector3 b = a - Vector3(0.f, 1.f, 0.f);
-	Vector3 c = 3.f * b;
+	Vector3 viewPos = Vector3::one;
+
+	Vector3 cameraPos = Vector3::zero;
+	Vector3 cameraForward = Vector3::one;
+
+	Vector4 retVal = Matrix4x4::GetViewMatrix(Vector3(0.f, 1.f, 0.f), cameraForward, cameraPos) * Vector4(viewPos, 1.f);
+
+	
 
 	Matrix4x4 mat = Matrix4x4::identity * Matrix4x4::identity;
 
