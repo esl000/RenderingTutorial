@@ -17,6 +17,10 @@
 #include <memory.h>
 #include <tchar.h>
 
+#define PI 3.14159265358979323846
+
 
 // 여기서 프로그램에 필요한 추가 헤더를 참조합니다.
 #include "3DUtil.h"
+
+extern HWND g_hWnd;

@@ -10,6 +10,51 @@
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
+HWND g_hWnd;
+
+Vector3 Vertice[] =
+{
+	Vector3(-1.f, -1.f, -1.f),
+	Vector3(-1.f,  1.f, -1.f),
+	Vector3(1.f,  1.f, -1.f),
+	Vector3(1.f, -1.f, -1.f),
+	Vector3(-1.f, -1.f,  1.f),
+	Vector3(-1.f,  1.f,  1.f),
+	Vector3(1.f,  1.f,  1.f),
+	Vector3(1.f, -1.f,  1.f)
+};
+
+int Indice[] =
+{
+	0, 1, 2,
+	0, 2, 3,
+	4, 6, 5,
+	4, 7, 6,
+	4, 5, 1,
+	4, 1, 0,
+	3, 2, 6,
+	3, 6, 7,
+	1, 5, 6,
+	1, 6, 2,
+	4, 0, 3,
+	4, 3, 7
+};
+
+Vector3 Eye(0.f, 0.f, 3.f);
+Vector3 Position(0.f, 0.f, 0.f);
+
+float angleX = 0.f, angleY = 0.f, Distance = 15.f;
+
+void Render(HDC hdc);
+
+HDC MemDC;
+
+HBITMAP hBitmap;
+
+HBITMAP hOldBitmap;
+
+bool Initialize = false;
+
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -42,18 +87,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
-	Vector3 viewPos = Vector3::one;
+	HDC hdc = GetDC(g_hWnd);
 
-	Vector3 cameraPos = Vector3::zero;
-	Vector3 cameraForward = Vector3::one;
+	MemDC = CreateCompatibleDC(hdc);
 
-	Vector4 retVal = Matrix4x4::GetViewMatrix(Vector3(0.f, 1.f, 0.f), cameraForward, cameraPos) * Vector4(viewPos, 1.f);
+	RECT rc;
+	GetClientRect(g_hWnd, &rc);
 
-	
+	hBitmap = CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
 
-	Matrix4x4 mat = Matrix4x4::identity * Matrix4x4::identity;
+	// SelectObject : 리턴값으로 이전의 객체를 반환
+	hOldBitmap = (HBITMAP)SelectObject(MemDC, hBitmap);
+
+	ReleaseDC(g_hWnd, hdc);
+
+	Initialize = true;
+
+
 
 	//Vector3 c = 3.f * a;
+
+	SetTimer(g_hWnd, 1000, 10, NULL);
 
     // 기본 메시지 루프입니다:
     while (GetMessage(&msg, nullptr, 0, 0))
@@ -65,10 +119,73 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
+	SelectObject(MemDC, hOldBitmap);
+	DeleteObject(hBitmap);
+	DeleteDC(MemDC);
+
+
     return (int) msg.wParam;
 }
 
 
+
+void Render(HDC hdc)
+{
+	Matrix4x4 matRotX = Matrix4x4::Matrix4x4RotationX(angleX);
+	Matrix4x4 matRotY = Matrix4x4::Matrix4x4RotationY(angleY);
+	Matrix4x4 matCamRot = matRotX * matRotY;
+	Eye = Vector3(0.f, 0.f, -Distance);
+	Eye = (matCamRot * Vector4(Eye, 1.f)).ToVector3();
+	Eye = Eye + Position;
+
+
+	RECT rc;
+	GetClientRect(g_hWnd, &rc);
+	PatBlt(MemDC, rc.left, rc.top, rc.right, rc.bottom, WHITENESS);
+
+	Matrix4x4 worldMat = Matrix4x4::GetTranslationMatrix(Position.x, Position.y, Position.z)
+		, ViewMatrix = Matrix4x4::GetViewMatrix(Vector3(0.f, 1.f, 0.f), (Position - Eye).Normalized(), Eye)
+		, projectionMatrix = Matrix4x4::GetPerspectiveMatrix(3.141592f * 0.25f, (float)rc.right / (float)rc.bottom, 1.f, 100.f)
+		, viewportMatrix = Matrix4x4::GetViewPortMatrix(0.f, 0.f, (float)rc.right, (float)rc.bottom, 0.f, 1.f);
+
+
+	Matrix4x4 renderingMatrix = ViewMatrix * projectionMatrix;
+
+	Vector4 vertice[8];
+
+	for (int i = 0; i < 8; ++i)
+	{
+		vertice[i] = Vector4(Vertice[i], 1.f);
+		vertice[i] = renderingMatrix * vertice[i];
+	}
+
+	for (int i = 0; i < 36; i += 3)
+	{
+		Vector4 v0 = vertice[Indice[i]]
+			, v1 = vertice[Indice[i + 1]]
+			, v2 = vertice[Indice[i + 2]];
+
+		Vector3 v01 = v1.ToVector3() - v0.ToVector3();
+		Vector3 v02 = v2.ToVector3() - v0.ToVector3();
+		Vector3 n = Vector3::CrossProduct(v01, v02);
+		float f = Vector3::DotProduct(n, Vector3(0.f, 0.f, 1.f));
+
+		if (f > 0)
+			continue;
+
+		v0 = viewportMatrix * v0;
+		v1 = viewportMatrix * v1;
+		v2 = viewportMatrix * v2;
+
+		MoveToEx(hdc, (int)v0.x, (int)v0.y, NULL);
+		LineTo(hdc, (int)v1.x, (int)v1.y);
+		LineTo(hdc, (int)v2.x, (int)v2.y);
+		LineTo(hdc, (int)v0.x, (int)v0.y);
+	}
+
+	BitBlt(hdc, 0, 0, rc.right, rc.bottom, MemDC, 0, 0, SRCCOPY);
+
+}
 
 //
 //  함수: MyRegisterClass()
@@ -118,6 +235,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
+   g_hWnd = hWnd;
+
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
@@ -134,10 +253,18 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
 //
 //
+bool LButtonDown = false;
+POINT Prev;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+	case WM_TIMER:
+		{
+			InvalidateRect(hWnd, NULL, false);
+		}
+		break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -159,10 +286,52 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
+
+			if(Initialize)
+				Render(hdc);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             EndPaint(hWnd, &ps);
         }
         break;
+	case WM_LBUTTONDOWN:
+		{
+			LButtonDown = true;
+			Prev.x = LOWORD(lParam);
+			Prev.y = HIWORD(lParam);
+		}
+		break;
+	case WM_LBUTTONUP:
+		{
+			LButtonDown = false;
+		}
+		break;
+	case WM_MOUSEMOVE:
+		{
+			if (!LButtonDown)
+				break;
+
+			POINT ptCurr;
+			ptCurr.x = LOWORD(lParam);
+			ptCurr.y = HIWORD(lParam);
+
+			int nDeltaX = ptCurr.x - Prev.x;
+			int nDeltaY = ptCurr.y - Prev.y;
+
+			angleY += (nDeltaX * 0.01f);
+			angleX += (nDeltaY * 0.01f);
+			if (angleX < -PI / 2.0f + 0.0001f)
+				angleX = -PI / 2.0f + 0.0001f;
+			if (angleX > PI / 2.0f - 0.0001f)
+				angleX = PI / 2.0f - 0.0001f;
+
+			Prev = ptCurr;
+		}
+		break;
+	case WM_MOUSEWHEEL:
+		{
+			Distance -= (GET_WHEEL_DELTA_WPARAM(wParam) * 0.01f);
+		}
+		break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;

@@ -39,7 +39,7 @@ struct Vector3
 
 	float Distance()
 	{
-		return sqrtf(x * x + y * y + z * z);
+		return sqrt(x * x + y * y + z * z);
 	}
 
 	static Vector3 CrossProduct(const Vector3 v1, const Vector3 v2)
@@ -90,6 +90,11 @@ struct Vector4
 	Vector4 operator -(const Vector4 other) const
 	{
 		return Vector4(x - other.x, y - other.y, z - other.z, w - other.w);
+	}
+
+	Vector3 ToVector3()
+	{
+		return Vector3(x, y, z);
 	}
 
 };
@@ -169,7 +174,7 @@ struct Matrix4x4
 
 	static const Matrix4x4 Matrix4x4RotationX(float angle)
 	{
-		float cosVal = cosf(angle), sinVal = sinf(angle);
+		float cosVal = cos(angle), sinVal = sin(angle);
 
 		return Matrix4x4(1.f, 0.f, 0.f, 0.f,
 			0.f, cosVal, sinVal, 0.f,
@@ -179,7 +184,7 @@ struct Matrix4x4
 
 	static const Matrix4x4 Matrix4x4RotationY(float angle)
 	{
-		float cosVal = cosf(angle), sinVal = sinf(angle);
+		float cosVal = cos(angle), sinVal = sin(angle);
 
 		return Matrix4x4(cosVal, 0.f, -sinVal, 0.f,
 			0.f, 1.f, 0.f, 0.f,
@@ -189,7 +194,7 @@ struct Matrix4x4
 
 	static const Matrix4x4 Matrix4x4RotationZ(float angle)
 	{
-		float cosVal = cosf(angle), sinVal = sinf(angle);
+		float cosVal = cos(angle), sinVal = sin(angle);
 
 		return Matrix4x4(cosVal, sinVal, 0.f, 0.f,
 			-sinVal, cosVal, 0.f, 0.f,
@@ -212,7 +217,7 @@ struct Matrix4x4
 
 		Vector3 r = Vector3::CrossProduct(u, f);
 		r = r.Normalized();
-		u = Vector3::CrossProduct(f, r);
+		u = Vector3::CrossProduct(f, r).Normalized();
 
 		return Matrix4x4(r.x, u.x, f.x, 0.f,
 			r.y, u.y, f.y, 0.f,
@@ -226,13 +231,23 @@ struct Matrix4x4
 	static Matrix4x4 GetPerspectiveMatrix(float fovy, float Aspect,
 		float zn, float zf)
 	{
-		float yScale = sinf(fovy * 0.5f) / cosf(fovy * 0.5f);
+		float yScale = 1.f / tan(fovy * 0.5f);
 		float xScale = yScale / Aspect;
 		return Matrix4x4(xScale, 0.f, 0.f, 0.f,
 			0.f, yScale, 0.f, 0.f,
 			0.f, 0.f, zf / (zf - zn), 1.f,
-			0.f, 0.f, - zn * zf / (zf - zn), 0.f);
+			0.f, 0.f, - (zn * zf) / (zf - zn), 0.f);
 	}
+
+	static Matrix4x4 GetViewPortMatrix(float x, float y, float width, float height, float minZ, float farZ)
+	{
+		return Matrix4x4(width * 0.5f, 0.f, 0.f, 0.f,
+			0.f, -height * 0.5f, 0.f, 0.f,
+			0.f, 0.f, farZ - minZ, 0.f,
+			(width * 0.5f) + x, y + (height * 0.5f), minZ, 1.f);
+	}
+
+	// w/2 * x + w/2 , h/2 - h/2 * y, (fz- mz) * z + mz
 
 
 private :
