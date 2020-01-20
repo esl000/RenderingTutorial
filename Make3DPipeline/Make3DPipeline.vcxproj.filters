@@ -27,7 +27,10 @@
     <ClInclude Include="Make3DPipeline.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="3DUtil.h">
+    <ClInclude Include="Vector.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,7 +41,10 @@
     <ClCompile Include="Make3DPipeline.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="3DUtil.cpp">
+    <ClCompile Include="Vector.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Matrix.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

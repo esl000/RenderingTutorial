@@ -103,10 +103,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	Initialize = true;
 
-
-
-	//Vector3 c = 3.f * a;
-
 	SetTimer(g_hWnd, 1000, 10, NULL);
 
     // 기본 메시지 루프입니다:
@@ -131,8 +127,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 void Render(HDC hdc)
 {
-	Matrix4x4 matRotX = Matrix4x4::Matrix4x4RotationX(angleX);
-	Matrix4x4 matRotY = Matrix4x4::Matrix4x4RotationY(angleY);
+	Matrix4x4 matRotX = Matrix4x4RotationX(angleX);
+	Matrix4x4 matRotY = Matrix4x4RotationY(angleY);
 	Matrix4x4 matCamRot = matRotX * matRotY;
 	Eye = Vector3(0.f, 0.f, -Distance);
 	Eye = (matCamRot * Vector4(Eye, 1.f)).ToVector3();
@@ -143,10 +139,10 @@ void Render(HDC hdc)
 	GetClientRect(g_hWnd, &rc);
 	PatBlt(MemDC, rc.left, rc.top, rc.right, rc.bottom, WHITENESS);
 
-	Matrix4x4 worldMat = Matrix4x4::GetTranslationMatrix(Position.x, Position.y, Position.z)
-		, ViewMatrix = Matrix4x4::GetViewMatrix(Vector3(0.f, 1.f, 0.f), (Position - Eye).Normalized(), Eye)
-		, projectionMatrix = Matrix4x4::GetPerspectiveMatrix(3.141592f * 0.25f, (float)rc.right / (float)rc.bottom, 1.f, 100.f)
-		, viewportMatrix = Matrix4x4::GetViewPortMatrix(0.f, 0.f, (float)rc.right, (float)rc.bottom, 0.f, 1.f);
+	Matrix4x4 worldMat = GetTranslationMatrix(Position.x, Position.y, Position.z)
+		, ViewMatrix = GetViewMatrix(Vector3(0.f, 1.f, 0.f), (Position - Eye).Normalized(), Eye)
+		, projectionMatrix = GetPerspectiveMatrix(3.141592f * 0.25f, (float)rc.right / (float)rc.bottom, 1.f, 100.f)
+		, viewportMatrix = GetViewPortMatrix(0.f, 0.f, (float)rc.right, (float)rc.bottom, 0.f, 1.f);
 
 
 	Matrix4x4 renderingMatrix = ViewMatrix * projectionMatrix;
@@ -157,6 +153,8 @@ void Render(HDC hdc)
 	{
 		vertice[i] = Vector4(Vertice[i], 1.f);
 		vertice[i] = renderingMatrix * vertice[i];
+
+		vertice[i] = vertice[i] * (1.f / vertice[i].w);
 	}
 
 	for (int i = 0; i < 36; i += 3)
@@ -177,10 +175,10 @@ void Render(HDC hdc)
 		v1 = viewportMatrix * v1;
 		v2 = viewportMatrix * v2;
 
-		MoveToEx(hdc, (int)v0.x, (int)v0.y, NULL);
-		LineTo(hdc, (int)v1.x, (int)v1.y);
-		LineTo(hdc, (int)v2.x, (int)v2.y);
-		LineTo(hdc, (int)v0.x, (int)v0.y);
+		MoveToEx(MemDC, (int)v0.x, (int)v0.y, NULL);
+		LineTo(MemDC, (int)v1.x, (int)v1.y);
+		LineTo(MemDC, (int)v2.x, (int)v2.y);
+		LineTo(MemDC, (int)v0.x, (int)v0.y);
 	}
 
 	BitBlt(hdc, 0, 0, rc.right, rc.bottom, MemDC, 0, 0, SRCCOPY);
