@@ -17,11 +17,19 @@
 #include <memory.h>
 #include <tchar.h>
 
-#define PI 3.14159265f
-
 
 // 여기서 프로그램에 필요한 추가 헤더를 참조합니다.
+#include "resource.h"
 #include "Vector.h"
 #include "Matrix.h"
+
+#include <string>
+#include <vector>
+#include <map>
+#include <list>
+#include <queue>
+#include <stack>
+
+using namespace std;
 
 extern HWND g_hWnd;

@@ -1,0 +1,9 @@
+#pragma once
+#include "CoreInclude.h"
+#include "Core.h"
+#include "RenderingCore.h"
+#include "InputManager.h"
+#include "Component.h"
+#include "Transform.h"
+#include "World.h"
+#include "GameObject.h"
